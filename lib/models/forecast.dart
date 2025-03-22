@@ -97,7 +97,7 @@ class Forecast {
       dailyWillItSnow: json['day']['daily_will_it_snow'],
       dailyChanceOfSnow: json['day']['daily_chance_of_snow'],
       condition: WeatherCondition.fromJson(json['day']['condition']),
-      iconUrl: json['day']['condition']['icon'],
+      iconUrl: 'https:${json['day']['condition']['icon']}',
     );
   }
 }
@@ -116,7 +116,7 @@ class WeatherCondition {
   factory WeatherCondition.fromJson(Map<String, dynamic> json) {
     return WeatherCondition(
       text: json['text'],
-      icon: json['icon'],
+      icon: 'https:${json['icon']}',
       code: json['code'],
     );
   }

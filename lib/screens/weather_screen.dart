@@ -71,7 +71,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
                             ),
                             const SizedBox(width: 16),
                             Expanded(
-                              flex: 2,
+                              flex: 3,
                               child: Consumer<WeatherProvider>(
                                 builder: (context, weatherProvider, child) {
                                   final status = weatherProvider.status;
@@ -90,7 +90,8 @@ class _WeatherScreenState extends State<WeatherScreen> {
                                       ),
                                     );
                                   } else if (status == WeatherStatus.success) {
-                                    return _buildWeatherPanel(weatherProvider);
+                                    return _buildWeatherPanel(
+                                        weatherProvider, isDesktop);
                                   } else {
                                     return const Center(
                                       child: Text(
@@ -109,7 +110,8 @@ class _WeatherScreenState extends State<WeatherScreen> {
                             Expanded(
                               child: Consumer<WeatherProvider>(
                                 builder: (context, weatherProvider, child) {
-                                  return _buildWeatherPanel(weatherProvider);
+                                  return _buildWeatherPanel(
+                                      weatherProvider, isDesktop);
                                 },
                               ),
                             ),
@@ -194,89 +196,115 @@ class _WeatherScreenState extends State<WeatherScreen> {
     );
   }
 
-  Widget _buildWeatherPanel(WeatherProvider weatherProvider) {
+  Widget _buildWeatherPanel(WeatherProvider weatherProvider, bool isDesktop) {
     final weather = weatherProvider.currentWeather;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Current Weather Panel
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.blue[700],
-            borderRadius: BorderRadius.circular(8),
-          ),
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+    if (weather == null) {
+      return const Center(
+        child: Text('No weather data available'),
+      );
+    }
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(
+        parent: BouncingScrollPhysics(),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Current Weather Panel
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.blue[700],
+              borderRadius: BorderRadius.circular(8),
+            ),
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${weather.location.name} (${weather.location.localtime})',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _buildWeatherInfoRow(
+                          'Temperature:', '${weather.current.tempC}°C'),
+                      const SizedBox(height: 8),
+                      _buildWeatherInfoRow(
+                          'Wind:', '${weather.current.windKph} km/h'),
+                      const SizedBox(height: 8),
+                      _buildWeatherInfoRow(
+                          'Humidity:', '${weather.current.humidity}%'),
+                    ],
+                  ),
+                ),
+                Column(
                   children: [
-                    Text(
-                      '${weather?.location.name} (${weather?.location.localtime})',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+                    Image.network(
+                      weather.current.condition.icon,
+                      width: 60,
+                      height: 60,
+                      errorBuilder: (context, error, stackTrace) => const Icon(
+                        Icons.cloud,
+                        size: 60,
                         color: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    _buildWeatherInfoRow(
-                        'Temperature:', '${weather?.current.tempC}°C'),
                     const SizedBox(height: 8),
-                    _buildWeatherInfoRow(
-                        'Wind:', '${weather?.current.windKph} km/h'),
-                    const SizedBox(height: 8),
-                    _buildWeatherInfoRow(
-                        'Humidity:', '${weather?.current.humidity}%'),
+                    Text(
+                      weather.current.condition.text,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                      ),
+                    ),
                   ],
                 ),
-              ),
-              Column(
-                children: [
-                  Image.network(
-                    weather?.current.condition.icon ?? '',
-                    width: 60,
-                    height: 60,
-                    errorBuilder: (context, error, stackTrace) => const Icon(
-                      Icons.cloud,
-                      size: 60,
-                      color: Colors.white,
-                    ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          // 4-Day Forecast Header
+          const Text(
+            '4-Day Forecast',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          // 4-Day Forecast Cards
+          // Expanded(
+          //   child: ForecastList(
+          //     forecasts: weatherProvider.forecast,
+          //     onLoadMore: () {
+          //       weatherProvider.loadMoreForecastDays();
+          //     },
+          //   ),
+          // ),
+          isDesktop
+              ? SizedBox(
+                  height: 400,
+                  child: ForecastList(
+                    forecasts: weatherProvider.forecast,
+                    onLoadMore: () {
+                      weatherProvider.loadMoreForecastDays();
+                    },
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${weather?.current.condition.text}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 20),
-        // 4-Day Forecast Header
-        const Text(
-          '4-Day Forecast',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 16),
-        // 4-Day Forecast Cards
-        Expanded(
-          child: ForecastList(
-            forecasts: weatherProvider.forecast,
-            onLoadMore: () {
-              weatherProvider.loadMoreForecastDays();
-            },
-          ),
-        ),
-      ],
+                )
+              : ForecastList(
+                  forecasts: weatherProvider.forecast,
+                  onLoadMore: () {
+                    weatherProvider.loadMoreForecastDays();
+                  },
+                ),
+        ],
+      ),
     );
   }
 
@@ -300,70 +328,6 @@ class _WeatherScreenState extends State<WeatherScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildForecastCard(
-    String date,
-    String icon,
-    double temp,
-    double wind,
-    int humidity,
-  ) {
-    return IntrinsicWidth(
-      child: Container(
-        margin: const EdgeInsets.only(right: 12),
-        decoration: BoxDecoration(
-          color: Colors.grey.shade700,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '($date)',
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.white,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 12),
-            ImageIcon(
-              NetworkImage(icon),
-              size: 40,
-              color: Colors.white,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              '${temp.toStringAsFixed(1)}°C',
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Wind: ${wind.toStringAsFixed(1)} km/h',
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Humidity: $humidity%',
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.white,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

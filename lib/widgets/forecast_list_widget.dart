@@ -15,56 +15,85 @@ class ForecastList extends StatelessWidget {
   Widget build(BuildContext context) {
     // Determine grid size based on screen width
     final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth > 768;
     final crossAxisCount = screenWidth > 1100
         ? 4
         : screenWidth > 700
             ? 3
             : 2;
 
+    final itemHeight =
+        (MediaQuery.of(context).size.width / crossAxisCount) / 0.7;
+    final rowCount = (forecasts.length + 1 + crossAxisCount - 1) ~/
+        crossAxisCount; // +1 cho nút Load More, làm tròn lên
+    final gridHeight =
+        rowCount * itemHeight + (rowCount - 1) * 12; // 12 là mainAxisSpacing
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Forecast Title
-        const Padding(
-          padding: EdgeInsets.only(left: 8.0, bottom: 16.0),
-          child: Text(
-            'Forecast for Coming Days',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-
         // Forecast Grid
-        Expanded(
-          child: GridView.builder(
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: crossAxisCount,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 0.9,
-            ),
-            itemCount: forecasts.length + 1, // +1 for the load more button
-            itemBuilder: (context, index) {
-              // Show load more button at the end
-              if (index == forecasts.length) {
-                return _buildLoadMoreCard();
-              }
+        isDesktop
+            ? Expanded(
+                child: GridView.builder(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: 0.7,
+                  ),
+                  itemCount:
+                      forecasts.length + 1, // +1 for the load more button
+                  itemBuilder: (context, index) {
+                    // Show load more button at the end
+                    if (index == forecasts.length) {
+                      return _buildLoadMoreCard();
+                    }
 
-              // Show forecast card
-              final forecast = forecasts[index];
-              return _buildForecastCard(
-                forecast.date,
-                forecast.iconUrl,
-                forecast.avgTempC,
-                forecast.maxWindKph,
-                forecast.avgHumidity,
-                forecast.condition.text,
-              );
-            },
-          ),
-        ),
+                    // Show forecast card
+                    final forecast = forecasts[index];
+                    return _buildForecastCard(
+                      forecast.date,
+                      forecast.iconUrl,
+                      forecast.avgTempC,
+                      forecast.maxWindKph,
+                      forecast.avgHumidity,
+                      forecast.condition.text,
+                    );
+                  },
+                ),
+              )
+            : SizedBox(
+                height: gridHeight,
+                child: GridView.builder(
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: 0.7,
+                  ),
+                  itemCount:
+                      forecasts.length + 1, // +1 for the load more button
+                  itemBuilder: (context, index) {
+                    // Show load more button at the end
+                    if (index == forecasts.length) {
+                      return _buildLoadMoreCard();
+                    }
+
+                    // Show forecast card
+                    final forecast = forecasts[index];
+                    return _buildForecastCard(
+                      forecast.date,
+                      forecast.iconUrl,
+                      forecast.avgTempC,
+                      forecast.maxWindKph,
+                      forecast.avgHumidity,
+                      forecast.condition.text,
+                    );
+                  },
+                ),
+              )
       ],
     );
   }
@@ -141,7 +170,7 @@ class ForecastList extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Image.network(
-            icon,
+            icon.replaceFirst("file://", "https://"),
             width: 60,
             height: 60,
             errorBuilder: (context, error, stackTrace) => const Icon(

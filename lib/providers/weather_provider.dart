@@ -32,6 +32,7 @@ class WeatherProvider extends ChangeNotifier {
     try {
       _currentWeather = await _repository.getCurrentWeather(location);
       _forecast = await _repository.getForecast(location);
+      _forecast.removeAt(0); // Remove the current day from the forecast list
       _status = WeatherStatus.success;
     } catch (e) {
       _errorMessage = e.toString();
@@ -45,11 +46,9 @@ class WeatherProvider extends ChangeNotifier {
     if (_currentLocation.isEmpty) return;
 
     try {
-      // Tải thêm 3 ngày dự báo
       final additionalDays = await _repository.getForecast(_currentLocation,
           days: _forecast.length + 3);
 
-      // Chỉ thêm vào những ngày chưa có trong danh sách hiện tại
       final currentDates = _forecast.map((f) => f.dateEpoch).toSet();
       final newForecastDays = additionalDays
           .where((day) => !currentDates.contains(day.dateEpoch))
