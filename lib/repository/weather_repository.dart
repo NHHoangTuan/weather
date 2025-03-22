@@ -32,14 +32,14 @@ class WeatherRepository {
       // Save weather information and search time
       history[location] = {
         'weather': {
-          'temperature': weather.temperature,
-          'humidity': weather.humidity,
-          'windSpeed': weather.windSpeed,
-          'condition': weather.condition,
-          'iconUrl': weather.iconUrl,
+          'temperature': weather.current.tempC,
+          'humidity': weather.current.humidity,
+          'windSpeed': weather.current.windKph,
+          'condition': weather.current.condition.text,
+          'iconUrl': weather.current.condition.icon,
         },
         'searchTime': DateTime.now().toIso8601String(),
-        'lastUpdated': weather.lastUpdated.toIso8601String(),
+        'lastUpdated': weather.current.lastUpdated,
       };
 
       await prefs.setString('weather_history', json.encode(history));
@@ -48,7 +48,7 @@ class WeatherRepository {
     }
   }
 
-  // Lấy lịch sử tìm kiếm thời tiết từ SharedPreferences
+  // Get search history from SharedPreferences
   Future<Map<String, dynamic>> getSearchHistory() async {
     try {
       final prefs = await SharedPreferences.getInstance();

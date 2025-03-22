@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:weather/providers/weather_provider.dart';
 
 class WeatherScreen extends StatefulWidget {
   const WeatherScreen({Key? key}) : super(key: key);
@@ -8,12 +10,31 @@ class WeatherScreen extends StatefulWidget {
 }
 
 class _WeatherScreenState extends State<WeatherScreen> {
-  final TextEditingController _cityController = TextEditingController();
+  late TextEditingController _cityController;
+
+  @override
+  void initState() {
+    super.initState();
+    _cityController = TextEditingController();
+  }
 
   @override
   void dispose() {
     _cityController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleSearch() async {
+    final city = _cityController.text;
+    if (city.isEmpty) return;
+
+    try {
+      // Call the fetchWeather method from the provider
+      await context.read<WeatherProvider>().fetchWeather(city);
+    } catch (e) {
+      // Handle error
+      debugPrint('Error searching weather: $e');
+    }
   }
 
   @override
@@ -49,7 +70,33 @@ class _WeatherScreenState extends State<WeatherScreen> {
                             const SizedBox(width: 16),
                             Expanded(
                               flex: 2,
-                              child: _buildWeatherPanel(),
+                              child: Consumer<WeatherProvider>(
+                                builder: (context, weatherProvider, child) {
+                                  final status = weatherProvider.status;
+                                  if (status == WeatherStatus.loading) {
+                                    return const Center(
+                                      child: CircularProgressIndicator(),
+                                    );
+                                  } else if (status == WeatherStatus.error) {
+                                    return Center(
+                                      child: Text(
+                                        weatherProvider.errorMessage,
+                                        style: const TextStyle(
+                                          color: Colors.red,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                    );
+                                  } else if (status == WeatherStatus.success) {
+                                    return _buildWeatherPanel(weatherProvider);
+                                  } else {
+                                    return const Center(
+                                      child: Text(
+                                          'Find a location to check the weather'),
+                                    );
+                                  }
+                                },
+                              ),
                             ),
                           ],
                         )
@@ -57,7 +104,13 @@ class _WeatherScreenState extends State<WeatherScreen> {
                           children: [
                             _buildSearchPanel(),
                             const SizedBox(height: 16),
-                            Expanded(child: _buildWeatherPanel()),
+                            Expanded(
+                              child: Consumer<WeatherProvider>(
+                                builder: (context, weatherProvider, child) {
+                                  return _buildWeatherPanel(weatherProvider);
+                                },
+                              ),
+                            ),
                           ],
                         ),
                 ),
@@ -99,7 +152,9 @@ class _WeatherScreenState extends State<WeatherScreen> {
         ),
         const SizedBox(height: 12),
         ElevatedButton(
-          onPressed: () {},
+          onPressed: () {
+            _handleSearch();
+          },
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.blue[700],
             padding: const EdgeInsets.symmetric(vertical: 16),
@@ -137,7 +192,8 @@ class _WeatherScreenState extends State<WeatherScreen> {
     );
   }
 
-  Widget _buildWeatherPanel() {
+  Widget _buildWeatherPanel(WeatherProvider weatherProvider) {
+    final weather = weatherProvider.currentWeather;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -154,34 +210,37 @@ class _WeatherScreenState extends State<WeatherScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'London (2023-06-19)',
-                      style: TextStyle(
+                    Text(
+                      '${weather?.location.name} (${weather?.location.localtime})',
+                      style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
                     ),
                     const SizedBox(height: 16),
-                    _buildWeatherInfoRow('Temperature:', '18.71°C'),
+                    _buildWeatherInfoRow(
+                        'Temperature:', '${weather?.current.tempC}°C'),
                     const SizedBox(height: 8),
-                    _buildWeatherInfoRow('Wind:', '4.31 M/S'),
+                    _buildWeatherInfoRow(
+                        'Wind:', '${weather?.current.windKph} km/h'),
                     const SizedBox(height: 8),
-                    _buildWeatherInfoRow('Humidity:', '76%'),
+                    _buildWeatherInfoRow(
+                        'Humidity:', '${weather?.current.humidity}%'),
                   ],
                 ),
               ),
               Column(
                 children: [
-                  Icon(
-                    Icons.cloudy_snowing,
+                  ImageIcon(
+                    NetworkImage('${weather?.current.condition.icon}'),
                     size: 60,
                     color: Colors.white.withOpacity(0.9),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Moderate rain',
-                    style: TextStyle(
+                  Text(
+                    '${weather?.current.condition.text}',
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
                     ),
