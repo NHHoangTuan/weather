@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:weather/providers/weather_provider.dart';
 
+import '../widgets/forecast_list_widget.dart';
+
 class WeatherScreen extends StatefulWidget {
   const WeatherScreen({Key? key}) : super(key: key);
 
@@ -232,10 +234,15 @@ class _WeatherScreenState extends State<WeatherScreen> {
               ),
               Column(
                 children: [
-                  ImageIcon(
-                    NetworkImage('${weather?.current.condition.icon}'),
-                    size: 60,
-                    color: Colors.white.withOpacity(0.9),
+                  Image.network(
+                    weather?.current.condition.icon ?? '',
+                    width: 60,
+                    height: 60,
+                    errorBuilder: (context, error, stackTrace) => const Icon(
+                      Icons.cloud,
+                      size: 60,
+                      color: Colors.white,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -262,21 +269,11 @@ class _WeatherScreenState extends State<WeatherScreen> {
         const SizedBox(height: 16),
         // 4-Day Forecast Cards
         Expanded(
-          child: GridView.count(
-            crossAxisCount: MediaQuery.of(context).size.width > 1100 ? 4 : 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 0.9,
-            children: [
-              _buildForecastCard(
-                  '2023-06-20', Icons.cloud, '17.64°C', '0.73 M/S', '70%'),
-              _buildForecastCard(
-                  '2023-06-21', Icons.wb_sunny, '16.78°C', '2.72 M/S', '83%'),
-              _buildForecastCard('2023-06-22', Icons.cloud_queue, '18.20°C',
-                  '1.49 M/S', '72%'),
-              _buildForecastCard(
-                  '2023-06-23', Icons.grain, '17.08°C', '0.9 M/S', '89%'),
-            ],
+          child: ForecastList(
+            forecasts: weatherProvider.forecast,
+            onLoadMore: () {
+              weatherProvider.loadMoreForecastDays();
+            },
           ),
         ),
       ],
@@ -308,59 +305,64 @@ class _WeatherScreenState extends State<WeatherScreen> {
 
   Widget _buildForecastCard(
     String date,
-    IconData icon,
-    String temp,
-    String wind,
-    String humidity,
+    String icon,
+    double temp,
+    double wind,
+    int humidity,
   ) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey.shade700,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            '($date)',
-            style: const TextStyle(
-              fontSize: 14,
+    return IntrinsicWidth(
+      child: Container(
+        margin: const EdgeInsets.only(right: 12),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade700,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '($date)',
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.white,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            ImageIcon(
+              NetworkImage(icon),
+              size: 40,
               color: Colors.white,
             ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 12),
-          Icon(
-            icon,
-            size: 40,
-            color: Colors.white,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Temp: $temp',
-            style: const TextStyle(
-              fontSize: 14,
-              color: Colors.white,
+            const SizedBox(height: 16),
+            Text(
+              '${temp.toStringAsFixed(1)}°C',
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.white,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Wind: $wind',
-            style: const TextStyle(
-              fontSize: 14,
-              color: Colors.white,
+            const SizedBox(height: 8),
+            Text(
+              'Wind: ${wind.toStringAsFixed(1)} km/h',
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.white,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Humidity: $humidity',
-            style: const TextStyle(
-              fontSize: 14,
-              color: Colors.white,
+            const SizedBox(height: 8),
+            Text(
+              'Humidity: $humidity%',
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.white,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

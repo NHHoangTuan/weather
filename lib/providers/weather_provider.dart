@@ -50,9 +50,9 @@ class WeatherProvider extends ChangeNotifier {
           days: _forecast.length + 3);
 
       // Chỉ thêm vào những ngày chưa có trong danh sách hiện tại
-      final currentDates = _forecast.map((f) => f.date.day).toSet();
+      final currentDates = _forecast.map((f) => f.dateEpoch).toSet();
       final newForecastDays = additionalDays
-          .where((day) => !currentDates.contains(day.date.day))
+          .where((day) => !currentDates.contains(day.dateEpoch))
           .toList();
 
       _forecast.addAll(newForecastDays);
