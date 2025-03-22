@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:weather/providers/weather_provider.dart';
 
+import '../services/location_service.dart';
 import '../widgets/forecast_list_widget.dart';
 
 class WeatherScreen extends StatefulWidget {
@@ -13,6 +14,7 @@ class WeatherScreen extends StatefulWidget {
 
 class _WeatherScreenState extends State<WeatherScreen> {
   late TextEditingController _cityController;
+  final LocationService _locationService = LocationService();
 
   @override
   void initState() {
@@ -36,6 +38,32 @@ class _WeatherScreenState extends State<WeatherScreen> {
     } catch (e) {
       // Handle error
       debugPrint('Error searching weather: $e');
+    }
+  }
+
+  Future<void> _handleCurrentLocation() async {
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Getting your location...')),
+      );
+
+      final weatherProvider = context.read<WeatherProvider>();
+
+      final position = await _locationService.getCurrentPosition(context);
+
+      if (position != null) {
+        await weatherProvider.fetchWeatherByCoordinates(
+          position.latitude,
+          position.longitude,
+        );
+      }
+
+      weatherProvider.clearCurrentLocation();
+    } catch (e) {
+      debugPrint('Error getting current location: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
     }
   }
 
@@ -109,11 +137,17 @@ class _WeatherScreenState extends State<WeatherScreen> {
                             const SizedBox(height: 16),
                             Expanded(
                               child: Consumer<WeatherProvider>(
-                                builder: (context, weatherProvider, child) {
+                                  builder: (context, weatherProvider, child) {
+                                final status = weatherProvider.status;
+                                if (status == WeatherStatus.loading) {
+                                  return const Center(
+                                    child: CircularProgressIndicator(),
+                                  );
+                                } else {
                                   return _buildWeatherPanel(
                                       weatherProvider, isDesktop);
-                                },
-                              ),
+                                }
+                              }),
                             ),
                           ],
                         ),
@@ -162,6 +196,9 @@ class _WeatherScreenState extends State<WeatherScreen> {
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.blue[700],
             padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
           ),
           child: const Text(
             'Search',
@@ -182,10 +219,15 @@ class _WeatherScreenState extends State<WeatherScreen> {
           ),
         ),
         ElevatedButton(
-          onPressed: () {},
+          onPressed: () {
+            _handleCurrentLocation();
+          },
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.grey,
             padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
           ),
           child: const Text(
             'Use Current Location',
@@ -279,20 +321,15 @@ class _WeatherScreenState extends State<WeatherScreen> {
           ),
           const SizedBox(height: 16),
           // 4-Day Forecast Cards
-          // Expanded(
-          //   child: ForecastList(
-          //     forecasts: weatherProvider.forecast,
-          //     onLoadMore: () {
-          //       weatherProvider.loadMoreForecastDays();
-          //     },
-          //   ),
-          // ),
           isDesktop
               ? SizedBox(
                   height: 400,
                   child: ForecastList(
                     forecasts: weatherProvider.forecast,
                     onLoadMore: () {
+                      if (weatherProvider.status == WeatherStatus.loading) {
+                        return;
+                      }
                       weatherProvider.loadMoreForecastDays();
                     },
                   ),
@@ -300,6 +337,9 @@ class _WeatherScreenState extends State<WeatherScreen> {
               : ForecastList(
                   forecasts: weatherProvider.forecast,
                   onLoadMore: () {
+                    if (weatherProvider.status == WeatherStatus.loading) {
+                      return;
+                    }
                     weatherProvider.loadMoreForecastDays();
                   },
                 ),

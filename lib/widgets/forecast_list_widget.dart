@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:weather/providers/weather_provider.dart';
 import '../models/forecast.dart';
 
 class ForecastList extends StatelessWidget {
@@ -40,7 +42,7 @@ class ForecastList extends StatelessWidget {
                     crossAxisCount: crossAxisCount,
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
-                    childAspectRatio: 0.7,
+                    childAspectRatio: 0.9,
                   ),
                   itemCount:
                       forecasts.length + 1, // +1 for the load more button
@@ -110,24 +112,29 @@ class ForecastList extends StatelessWidget {
         child: InkWell(
           onTap: onLoadMore,
           borderRadius: BorderRadius.circular(8),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.add_circle_outline,
-                size: 48,
-                color: Colors.blue.shade700,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Load More',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blue.shade700,
-                ),
-              ),
-            ],
+          child: Consumer<WeatherProvider>(
+            builder: (context, weatherProvider, child) =>
+                weatherProvider.loadMoreStatus == WeatherStatus.loading
+                    ? const CircularProgressIndicator()
+                    : Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.add_circle_outline,
+                            size: 48,
+                            color: Colors.blue.shade700,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Load More',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
           ),
         ),
       ),
