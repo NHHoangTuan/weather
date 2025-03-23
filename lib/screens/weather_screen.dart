@@ -68,6 +68,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
       }
 
       weatherProvider.clearCurrentLocation();
+      await weatherProvider.loadSearchHistory();
     } catch (e) {
       debugPrint('Error getting current location: $e');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -349,6 +350,43 @@ class _WeatherScreenState extends State<WeatherScreen> {
                       ),
                     ),
                   ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.blue[50],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blue.shade200),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Get Daily Forecasts',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Subscribe to receive daily weather forecasts for this location directly to your email inbox.',
+                ),
+                const SizedBox(height: 12),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/subscribe');
+                  },
+                  icon: const Icon(Icons.email),
+                  label: const Text('Subscribe for Email Updates'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue[700],
+                    foregroundColor: Colors.white,
+                  ),
                 ),
               ],
             ),
