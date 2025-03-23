@@ -29,6 +29,9 @@ class WeatherRepository {
       final historyJson = prefs.getString('weather_history') ?? '{}';
       final Map<String, dynamic> history = json.decode(historyJson);
 
+      location = weather.location.name;
+      debugPrint('--Location: $location');
+
       // Save weather information and search time
       history[location] = {
         'weather': {

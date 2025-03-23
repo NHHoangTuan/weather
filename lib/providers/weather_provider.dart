@@ -35,9 +35,6 @@ class WeatherProvider extends ChangeNotifier {
       _currentWeather = await _repository.getCurrentWeather(location);
       _forecast = await _repository.getForecast(location);
       _forecast.removeAt(0); // Remove the current day from the forecast list
-      for (var i = 0; i < _forecast.length; i++) {
-        debugPrint('--Forecast $i: ${_forecast[i].date}');
-      }
       _status = WeatherStatus.success;
     } catch (e) {
       _errorMessage = e.toString();

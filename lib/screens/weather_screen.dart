@@ -4,6 +4,7 @@ import 'package:weather/providers/weather_provider.dart';
 
 import '../services/location_service.dart';
 import '../widgets/forecast_list_widget.dart';
+import '../widgets/search_history.dart';
 
 class WeatherScreen extends StatefulWidget {
   const WeatherScreen({Key? key}) : super(key: key);
@@ -20,6 +21,11 @@ class _WeatherScreenState extends State<WeatherScreen> {
   void initState() {
     super.initState();
     _cityController = TextEditingController();
+
+    // Load the search history after the first frame is rendered
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<WeatherProvider>().loadSearchHistory();
+    });
   }
 
   @override
@@ -32,9 +38,12 @@ class _WeatherScreenState extends State<WeatherScreen> {
     final city = _cityController.text;
     if (city.isEmpty) return;
 
+    final weatherProvider = context.read<WeatherProvider>();
     try {
       // Call the fetchWeather method from the provider
-      await context.read<WeatherProvider>().fetchWeather(city);
+      await weatherProvider.fetchWeather(city);
+
+      await weatherProvider.loadSearchHistory();
     } catch (e) {
       // Handle error
       debugPrint('Error searching weather: $e');
@@ -164,29 +173,63 @@ class _WeatherScreenState extends State<WeatherScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
-          'Enter a City Name',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+        const Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Enter a City Name',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: _cityController,
-          decoration: InputDecoration(
-            hintText: 'E.g., New York, London, Tokyo',
-            fillColor: Colors.white,
-            filled: true,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(4),
-              borderSide: BorderSide.none,
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _cityController,
+                decoration: InputDecoration(
+                  hintText: 'E.g., New York, London, Tokyo',
+                  fillColor: Colors.white,
+                  filled: true,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(4),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                ),
+              ),
             ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 14,
+            Consumer<WeatherProvider>(
+              builder: (context, provider, _) {
+                final hasHistory = provider.searchHistory.isNotEmpty;
+
+                return IconButton(
+                  onPressed: () {
+                    if (hasHistory) {
+                      showModalBottomSheet(
+                        context: context,
+                        builder: (context) => const SearchHistory(),
+                      );
+                    } else {
+                      null;
+                    }
+                  },
+                  icon: Icon(
+                    Icons.history,
+                    color: hasHistory ? Colors.blue[700] : Colors.grey,
+                  ),
+                  tooltip: 'Search history',
+                );
+              },
             ),
-          ),
+          ],
         ),
         const SizedBox(height: 12),
         ElevatedButton(
@@ -195,7 +238,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.blue[700],
-            padding: const EdgeInsets.symmetric(vertical: 16),
+            padding: const EdgeInsets.symmetric(vertical: 12),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
             ),
@@ -224,7 +267,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.grey,
-            padding: const EdgeInsets.symmetric(vertical: 16),
+            padding: const EdgeInsets.symmetric(vertical: 12),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
             ),
